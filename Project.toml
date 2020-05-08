@@ -1,0 +1,14 @@
+name = "BackgroundSubtraction"
+uuid = "9977cdcb-3521-4027-9f3f-3caff6505f42"
+authors = ["Sebastian Ament <sebastianeament@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Kernel = "b3329135-7958-41d4-bb02-e084c5a526bf"
+LazyInverse = "d0afe1cb-6484-4949-b9e9-61bc645ed6c7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LinearAlgebraExtensions = "cb114d4a-f1bd-499c-ad9e-7f2ed74575b9"
+Metrics = "c142dcad-aa7a-4cb0-9847-771ddcebca7d"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+WoodburyIdentity = "49563772-d9e4-48b4-a8b6-4cbe661ead9f"
