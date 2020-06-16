@@ -33,9 +33,9 @@ end
     if doplot
         using Plots
         plotly()
-        plot(x, A[:,i])
-        plot!(x, background[:, i])
-        plot!(x, fx)
+        plot(x, A[:,i], label = "data")
+        plot!(x, background[:, i], label = "background")
+        plot!(x, fx, label = "inferred background")
         gui()
     end
 

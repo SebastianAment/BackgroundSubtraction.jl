@@ -1,4 +1,3 @@
-
 # data matrix A consists of columns of spectrograms
 # k is the number of components of the background model
 # project_u! is the projection of the background components into a RKHS
@@ -49,6 +48,8 @@ end
 
 # data matrix measurement consists of columns of spectrograms,
 # WARNING: overwrites measurement with background estimate
+# minnpeak is the minimum number of positive outliers below which the algorithm terminates
+#
 function projected_background!(background::AbstractArray, measurement::AbstractArray,
                                 projection!; minres::Real = 1e-2, nsigma::Real = 2,
                                             maxiter::Int = 16, minnpeak::Int = 1)
