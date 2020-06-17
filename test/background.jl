@@ -3,7 +3,7 @@ using Test
 using BackgroundSubtraction: mcbl
 using LinearAlgebra
 function synthetic_data(n = 128, m = 16)
-    f(x) = sin(2π*x) + 1
+    f(x) = sin(2π*x) + 1.1
     x = range(0, stop = 1, length = n)
     fx = f.(x)
     A = repeat(fx, 1, m)
@@ -19,7 +19,7 @@ function synthetic_data(n = 128, m = 16)
 end
 
 @testset "background" begin
-    n, m = 128, 16
+    n, m = 128, 3
     A, x, fx = synthetic_data(n, m)
     l = .2
     tol = 1e-1
@@ -34,8 +34,8 @@ end
         using Plots
         plotly()
         plot(x, A[:,i], label = "data")
-        plot!(x, background[:, i], label = "background")
-        plot!(x, fx, label = "inferred background")
+        plot!(x, background[:, i], label = "inferred background")
+        plot!(x, fx, label = "background")
         gui()
     end
 

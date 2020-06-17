@@ -265,7 +265,7 @@ version = "0.16.12"
 
 [[LazyInverse]]
 deps = ["LinearAlgebra", "Test"]
-git-tree-sha1 = "cf8e6caeca1fc20ddd83ee56bcf8ebcff25ca584"
+git-tree-sha1 = "7cab86851a227558a930bfc3773544716221e402"
 repo-rev = "master"
 repo-url = "https://github.com/SebastianAment/LazyInverse.jl.git"
 uuid = "d0afe1cb-6484-4949-b9e9-61bc645ed6c7"
@@ -296,7 +296,7 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[LinearAlgebraExtensions]]
 deps = ["FFTW", "InfiniteArrays", "LazyArrays", "LazyInverse", "LinearAlgebra", "StatsBase", "Test"]
-git-tree-sha1 = "f6f39e766018ab44d90f8f1c193efc707136f8ae"
+git-tree-sha1 = "5cc89b42d2c6cf40b962b1aa983a5951af6ef550"
 repo-rev = "master"
 repo-url = "https://github.com/SebastianAment/LinearAlgebraExtensions.jl.git"
 uuid = "cb114d4a-f1bd-499c-ad9e-7f2ed74575b9"
@@ -437,9 +437,9 @@ version = "1.0.5"
 
 [[Plots]]
 deps = ["Base64", "Contour", "Dates", "FFMPEG", "FixedPointNumbers", "GR", "GeometryTypes", "JSON", "LinearAlgebra", "Measures", "NaNMath", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "Requires", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs"]
-git-tree-sha1 = "70908194bb636437f181683625925505fd1664a8"
+git-tree-sha1 = "f431fb3f2dc68c4894ca09cd5493a55da8a0134c"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.4.1"
+version = "1.4.2"
 
 [[Polynomials]]
 deps = ["Intervals", "LinearAlgebra", "RecipesBase"]
