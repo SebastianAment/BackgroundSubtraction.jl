@@ -1,6 +1,7 @@
 module TestBackground
 using Test
-using BackgroundSubtraction: mcbl
+using BackgroundSubtraction
+using BackgroundSubtraction: kronecker_mcbl
 using LinearAlgebra
 function synthetic_data(n = 128, m = 16)
     f(x) = sin(2π*x) + 1.1
@@ -29,7 +30,7 @@ end
     @test maximum(abs, background[:, 1]-fx) < tol
     i = 1
 
-    doplot = true
+    doplot = false
     if doplot
         using Plots
         plotly()
@@ -45,6 +46,20 @@ end
     @test background isa Vector
     @test length(background) == length(A[:, i])
 
+    # testing kronecker projection
+    l_c = 1. # composition length scale
+    c = randn(2, m) # 2 dimensional composition dimension
+    a = A
+    background = kronecker_mcbl(a, x, l, c, l_c)
+    doplot = false
+    if doplot
+        using Plots
+        plotly()
+        plot(x, A[:, i], label = "data")
+        plot!(x, background[:, i], label = "inferred background")
+        plot!(x, fx, label = "background")
+        gui()
+    end
 end
 
 end # TestBackground

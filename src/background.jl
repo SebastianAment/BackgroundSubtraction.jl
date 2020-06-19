@@ -67,14 +67,49 @@ function projected_background!(background::AbstractArray, measurement::AbstractA
     background
 end
 
+############################ smooth projection #################################
 # tol is the threshold for detecting rank-deficiency
 # ncomp is the number of components of the background model, used for pre-allocation
 function smooth_projection(x::AbstractVector, l::Real, ncomp::Int = 0; tol::Real = 1e-6)
     k = Kernel.Lengthscale(Kernel.EQ(), l) # forms RKHS of background signal
-    P = Projection(Kernel.gramian(k, x), tol)
+    P = projection(Kernel.gramian(k, x), tol = tol)
     QXsize = ncomp == 0 ? size(P.Q, 2) : (size(P.Q, 2), ncomp)
     QX = zeros(eltype(x), QXsize) # pre-allocation for temporary needed for Projection
     return function project_u!(X) # projects matrix U in low rank factorization U*V
         mul!(X, P, X, QX)
     end
+end
+
+########################## kronecker projection ################################
+using KroneckerProducts: kronecker
+using LinearAlgebraExtensions
+using LinearAlgebraExtensions: LazyGrid, grid, AbstractMatOrFac
+# x is a lazily represented Cartesian grid of x (e.g. q) and c (composition) values
+# d is the dimension of the signal (1d spectrogram, 2d image)
+# l_x is length scale of background in x
+# l_c is length scale in composition
+function kronecker_projection(x, l_x::Real, c, l_c::Real; tol = 1e-6)
+    k_x = Kernel.Lengthscale(Kernel.EQ(), l_x)
+    k_c = Kernel.Lengthscale(Kernel.EQ(), l_c)
+    k = Kernel.separable(*, k_c, k_x) # kernel is separable across x and c
+    xc = grid(c, x) # lazy tensor grid
+    K = Kernel.gramian(k, xc)
+    P = kronecker(A -> projection(A, tol = tol), K)
+    return function projection!(background, measurement)
+        background .= P*measurement         # mul!(background, P, measurement)
+    end
+end
+
+# c is vector of composition coordinates, l_c the lengthscale in composition space
+function kronecker_mcbl(A::AbstractMatrix, x::AbstractVector, l_x::Real,
+                                            c::AbstractVecOrMat, l_c::Real;
+                                            minres::Real = 1e-2, nsigma::Real = 2,
+                                            maxiter::Int = 32, minnpeak::Int = 1)
+    measurement = copy(vec(A))
+    background = similar(measurement)
+    projection! = kronecker_projection(x, l_x, c, l_c)
+    projected_background!(background, measurement, projection!,
+                                        minres = minres, nsigma = nsigma,
+                                        maxiter = maxiter, minnpeak = minnpeak)
+    return reshape(background, size(A))
 end
