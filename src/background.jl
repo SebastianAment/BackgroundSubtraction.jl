@@ -29,7 +29,7 @@ function mcbl(A::AbstractMatrix, k::Int, project_u!;
     measurement = copy(A)
     background = similar(A)
     function projection!(background, measurement)
-        pals!(L, measurement, project_u!, maxiter = 32)
+        _, _, info = pals!(L, measurement, project_u!, maxiter = 32, min_delta = 1e-1minres)
         mul!(background, L.U, L.V)
     end
     projected_background!(background, measurement, projection!,

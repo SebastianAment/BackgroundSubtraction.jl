@@ -20,13 +20,14 @@ function synthetic_data(n = 128, m = 16)
 end
 
 @testset "background" begin
-    n, m = 128, 3
+    n, m = 128, 16
     A, x, fx = synthetic_data(n, m)
+    k = 4
     l = .2
-    tol = 1e-1
-    background = mcbl(A, 1, x, l)
+    background = mcbl(A, k, x, l)
     @test size(background) == size(A)
     @test all(≥(0), background)
+    tol = 1e-1
     @test maximum(abs, background[:, 1]-fx) < tol
     i = 1
 
