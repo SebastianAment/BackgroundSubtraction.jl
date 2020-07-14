@@ -1,7 +1,8 @@
 module BackgroundSubtraction
 using LinearAlgebra
 using LinearAlgebraExtensions
-using LinearAlgebraExtensions: LowRank, pals!, Projection, projection
+using LinearAlgebraExtensions: LowRank, pals!, projection, grid, AbstractMatOrFac
+using KroneckerProducts: kronecker
 using Kernel
 using Statistics
 
