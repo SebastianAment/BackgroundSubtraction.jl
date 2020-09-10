@@ -37,8 +37,8 @@ end
 @testset "background" begin
     n, m = 128, 16
     A, x, fx = synthetic_data(n, m)
-    k = 4
-    l = .2
+    k = 2
+    l = .5
     background = mcbl(A, k, x, l)
     @test size(background) == size(A)
     @test all(≥(0), background)
@@ -57,7 +57,7 @@ end
     end
 
     # testing with only vector input: less powerful, and needs stronger l regularization
-    background = mcbl(A[:,i], x, l)
+    background = mcbl(A[:,i], x, l, maxiter = 16)
     @test background isa Vector
     @test length(background) == length(A[:, i])
     tol = 5e-2

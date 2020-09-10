@@ -1,18 +1,38 @@
-##################################### 1D #######################################
-# for vector input, i.e. single spectrogram A
-function mcbl(A::AbstractVector, x::AbstractVector, l::Real)
-    project_u! = smooth_projection(x, l)
-    mcbl(A, project_u!)
+# TODO: MCBL hyper-parameters in one struct
+struct MCBL{T}
+    minres::T
+    nsigma::T
+    maxiter::Int
+    minnpeak::Int
+end
+function MCBL(;minres::Real = 1e-3, nsigma::Real = 2., maxiter::Int = 32, minnpeak::Int = 1)
+    MCBL(minres, nsigma, maxiter, minnpeak)
 end
 
-function mcbl(A::AbstractVector, project_u!)
+# mcbl(A...)
+
+##################################### 1D #######################################
+# for vector input, i.e. single spectrogram A
+function mcbl(A::AbstractVector, x::AbstractVector, l::Real;
+                                        minres::Real = 1e-2, nsigma::Real = 2,
+                                        maxiter::Int = 32, minnpeak::Int = 1)
+    project_u! = smooth_projection(x, l)
+    mcbl(A, project_u!, minres = minres, nsigma = nsigma,
+                        maxiter = maxiter, minnpeak = minnpeak)
+end
+
+function mcbl(A::AbstractVector, project_u!;
+                                        minres::Real = 1e-2, nsigma::Real = 2,
+                                        maxiter::Int = 32, minnpeak::Int = 1)
     measurement = copy(A)
     background = similar(A)
     function projection!(background, measurement)
         copyto!(background, measurement)
         background = project_u!(background)
     end
-    projected_background!(background, measurement, projection!)
+    projected_background!(background, measurement, projection!,
+                                        minres = minres, nsigma = nsigma,
+                                        maxiter = maxiter, minnpeak = minnpeak)
 end
 
 #################################### 2D ########################################
@@ -65,7 +85,7 @@ function mcbl(A::AbstractMatrix, x::AbstractVector, l_x::Real,
     return reshape(background, size(A))
 end
 ##################################### 3D #######################################
-# data tensor A consists of slices of 2d images, i.e. A[:, :, 1] is a 2D image
+# data tensor A consists of slices of smooth 2d images, i.e. A[:, :, 1] is a 2D image
 function mcbl(A::AbstractArray{<:Real, 3}, k::Int, x::AbstractVector, l_x::Real,
                                                 y::AbstractVector, l_y::Real;
                                         minres::Real = 1e-2, nsigma::Real = 2,
@@ -90,6 +110,7 @@ function mcbl(A::AbstractArray{<:Real, 3}, x::AbstractVecOrMat, l_x::Real,
                                         maxiter = maxiter, minnpeak = minnpeak)
     return reshape(background, size(A))
 end
+
 ######################### abstract subtraction algorithm #######################
 # data matrix measurement consists of columns of spectrograms,
 # WARNING: overwrites measurement with background estimate
@@ -144,11 +165,10 @@ function smooth_projection(x::AbstractVecOrMat, l_x::Real,
     kxyz = Kernel.Lengthscale.((k_x, k_y, k_z), (l_x, l_y, l_z))
     smooth_projection(kxyz, (x, y, z), tol = tol)
 end
-
 function smooth_projection(k::Tuple, x::Tuple; tol::Real = 1e-6)
     k = Kernel.separable(*, k...)
     K = Kernel.gramian(k, grid(x...))
-    K = kronecker(reverse(K.factors)) # TODO: why?
+    K = kronecker(reverse(K.factors)) # why reverse? because definition of Kronecker product is "row-major"
     P = kronecker(A -> projection(A, tol = tol), K)
     projection!(Y, X) = (Y .= P*X) # mul!(background, P, measurement)
     projection!(X) = (X .= P*X)
