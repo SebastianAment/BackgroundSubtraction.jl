@@ -1,16 +1,3 @@
-# TODO: MCBL hyper-parameters in one struct
-struct MCBL{T}
-    minres::T
-    nsigma::T
-    maxiter::Int
-    minnpeak::Int
-end
-function MCBL(;minres::Real = 1e-3, nsigma::Real = 2., maxiter::Int = 32, minnpeak::Int = 1)
-    MCBL(minres, nsigma, maxiter, minnpeak)
-end
-
-# mcbl(A...)
-
 ##################################### 1D #######################################
 # for vector input, i.e. single spectrogram A
 function mcbl(A::AbstractVector, x::AbstractVector, l::Real;

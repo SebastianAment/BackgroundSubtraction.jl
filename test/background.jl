@@ -12,7 +12,7 @@ function synthetic_data(n = 128, m = 16)
     σ = 1e-2
     @. A += σ * randn()
     # add positive outliers (i.e. peaks)
-    npeaks = n*m ÷ 3
+    npeaks = n*m ÷ 4
     outind = rand(eachindex(A), npeaks)
     @. A[outind] += exp(randn())
     return A, x, fx
@@ -28,7 +28,7 @@ function synthetic_images(nx = 128, ny = 128, m = 16)
     σ = 1e-2
     @. A += σ * randn()
     # add positive outliers (i.e. peaks)
-    npeaks = nx*ny*m ÷ 3
+    npeaks = nx*ny*m ÷ 4
     outind = rand(eachindex(A), npeaks)
     @. A[outind] += .1exp(randn())
     return A, x, y, fxy
@@ -38,26 +38,27 @@ end
     n, m = 128, 16
     A, x, fx = synthetic_data(n, m)
     k = 2
-    l = .5
+    l = 1/2
     background = mcbl(A, k, x, l)
     @test size(background) == size(A)
     @test all(≥(0), background)
     tol = 5e-2
     @test maximum(abs, background[:, 1]-fx) < tol
-    i = 1
 
     doplot = false
     if doplot
         using Plots
         plotly()
-        plot(x, A[:,i], label = "data")
+        plot(x, A[:, i], label = "data")
         plot!(x, background[:, i], label = "inferred background")
         plot!(x, fx, label = "background")
         gui()
     end
 
     # testing with only vector input: less powerful, and needs stronger l regularization
+    i = 1
     background = mcbl(A[:,i], x, l, maxiter = 16)
+
     @test background isa Vector
     @test length(background) == length(A[:, i])
     tol = 5e-2
