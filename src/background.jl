@@ -122,6 +122,7 @@ end
 ############################### smooth projection ##############################
 # tol is the threshold for detecting rank-deficiency
 # ncomp is the number of components of the background model, used for pre-allocation
+const Kernel = CovarianceFunctions
 function smooth_projection(x::AbstractVector, l::Real, ncomp::Int = 0; tol::Real = 1e-6)
     k = Kernel.Lengthscale(Kernel.EQ(), l) # forms RKHS of background signal
     P = projection(Kernel.gramian(k, x), tol = tol)
