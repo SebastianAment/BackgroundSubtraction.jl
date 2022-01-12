@@ -1,5 +1,6 @@
 # BackgroundSubtraction.jl
 [![CI](https://github.com/SebastianAment/BackgroundSubtraction.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/SebastianAment/BackgroundSubtraction.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/SebastianAment/BackgroundSubtraction.jl/branch/main/graph/badge.svg?token=MF0ACRKHYO)](https://codecov.io/gh/SebastianAment/BackgroundSubtraction.jl)
 
 A collection of background subtraction algorithms for spectroscopic data
 
