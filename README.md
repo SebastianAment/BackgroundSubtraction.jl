@@ -6,9 +6,7 @@ A collection of background subtraction algorithms for spectroscopic data
 
 # Getting Started 
 
-After installing the latest version Julia and cloning this repository, please run 
-`include("BackgroundSubtraction/src/install.jl")` in the Julia REPL.
-This will install `BackgroundSubtraction.jl` along with a few dependencies that are not yet registered with Julia's package manager.
+To install the package, simply type "`]`" followed up by "`add BackgroundSubtraction`" in the Julia REPL.
 
 The main function is based on the [multi-component background learning model (MCBL)](https://rdcu.be/b32TH), with the corresponding function `mcbl`:
 ```
