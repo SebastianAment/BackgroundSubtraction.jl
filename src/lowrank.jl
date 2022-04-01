@@ -238,15 +238,3 @@ function pals!(L::LowRank, A::AbstractMatrix,
                 maxiter::Int = 32, tol = eps(eltype(A)), min_delta = eps(eltype(A)))
     pals!(L.U, L.V, A, project_u!, project_v!, maxiter = maxiter, tol = tol, min_delta = min_delta)
 end
-
-# positive!(x) = (@. x = max(x, 0))
-
-# PU = Projection(U)
-# PV = Projection(V')
-# function pu!(x)
-#     mul!(x, PU, x)
-# end
-# function pv!(x)
-#     x = x'
-#     mul!(x, PV, x)
-# end
