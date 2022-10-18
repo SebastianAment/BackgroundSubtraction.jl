@@ -49,6 +49,7 @@ end
     if doplot
         using Plots
         plotly()
+        i = 1
         plot(x, A[:, i], label = "data")
         plot!(x, background[:, i], label = "inferred background")
         plot!(x, fx, label = "background")
@@ -57,7 +58,7 @@ end
 
     # testing with only vector input: less powerful, and needs stronger l regularization
     i = 1
-    background = mcbl(A[:,i], x, l, maxiter = 16)
+    background = mcbl(A[:, i], x, l, maxiter = 16)
 
     @test background isa Vector
     @test length(background) == length(A[:, i])

@@ -65,7 +65,9 @@ function mcbl(A::AbstractMatrix, x::AbstractVector, l_x::Real,
                                 maxiter::Int = 32, minnpeak::Int = 1)
     measurement = copy(vec(A))
     background = similar(measurement)
-    projection! = smooth_projection(x, l_x, y, l_y)
+    smooth_projection! = smooth_projection(x, l_x, y, l_y)
+    physical_projection! = physical_projection(minres, nsigma) # adding physical lower and upper bounds
+    projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
                                         maxiter = maxiter, minnpeak = minnpeak)
@@ -91,7 +93,9 @@ function mcbl(A::AbstractArray{<:Real, 3}, x::AbstractVecOrMat, l_x::Real,
                                 maxiter::Int = 32, minnpeak::Int = 1)
     measurement = copy(vec(A))
     background = similar(measurement)
-    projection! = smooth_projection(x, l_x, y, l_y, z, l_z)
+    smooth_projection! = smooth_projection(x, l_x, y, l_y, z, l_z)
+    physical_projection! = physical_projection(minres, nsigma) # adding physical lower and upper bounds
+    projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
                                         maxiter = maxiter, minnpeak = minnpeak)
@@ -120,10 +124,11 @@ function projected_background!(background::AbstractArray, measurement::AbstractA
 end
 
 ############################### smooth projection ##############################
+const PROJECT_TOL = 1e-6 # threshold for eigenvalues when bases are cut off
 # tol is the threshold for detecting rank-deficiency
 # ncomp is the number of components of the background model, used for pre-allocation
-const Kernel = CovarianceFunctions
-function smooth_projection(x::AbstractVector, l::Real, ncomp::Int = 0; tol::Real = 1e-6)
+const Kernel = CovarianceFunctions  # TODO: make compatible with latest version (`grid` missing)
+function smooth_projection(x::AbstractVector, l::Real, ncomp::Int = 0; tol::Real = PROJECT_TOL)
     k = Kernel.Lengthscale(Kernel.EQ(), l) # forms RKHS of background signal
     P = projection(Kernel.gramian(k, x), tol = tol)
     QXsize = ncomp == 0 ? size(P.Q, 2) : (size(P.Q, 2), ncomp)
@@ -161,4 +166,25 @@ function smooth_projection(k::Tuple, x::Tuple; tol::Real = 1e-6)
     projection!(Y, X) = (Y .= P*X) # mul!(background, P, measurement)
     projection!(X) = (X .= P*X)
     return projection!
+end
+
+
+############################ physical projection ###############################
+# projection to force background signal to be between zero and up to
+# the signal, including some
+function physical_projection(sigma::Real, nsigma::Int)
+    function project!(background, measurement)
+        upper_bound = @. measurement + sigma * nsigma
+        @. background = min(max(background, 0), upper_bound)
+    end
+    return project!
+end
+
+function combined_projection(P!, Q!)
+    function project!(Y, X)
+        P!(Y, X)
+        Q!(Y, X)
+    end
+    project!(X) = project!(X, X)
+    return project!
 end
