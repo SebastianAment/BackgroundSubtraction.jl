@@ -1,21 +1,29 @@
 ##################################### 1D #######################################
 # for vector input, i.e. single spectrogram A
 function mcbl(A::AbstractVector, x::AbstractVector, l::Real;
-                                        minres::Real = 1e-2, nsigma::Real = 2,
-                                        maxiter::Int = 32, minnpeak::Int = 1)
+                minres::Real = 1e-2, nsigma::Real = 2,
+                maxiter::Int = 32, minnpeak::Int = 1,
+                constraint_iter::Int = 1,
+                constraint_sigma::Union{Real, AbstractArray} = 0)
     project_u! = smooth_projection(x, l)
     mcbl(A, project_u!, minres = minres, nsigma = nsigma,
                         maxiter = maxiter, minnpeak = minnpeak)
 end
 
 function mcbl(A::AbstractVector, project_u!;
-                                        minres::Real = 1e-2, nsigma::Real = 2,
-                                        maxiter::Int = 32, minnpeak::Int = 1)
+                minres::Real = 1e-2, nsigma::Real = 2,
+                maxiter::Int = 32, minnpeak::Int = 1.,
+                constraint_iter::Int = 1,
+                constraint_sigma::Union{Real, AbstractArray} = 0)
     measurement = copy(A)
     background = similar(A)
+    physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
     function projection!(background, measurement)
         copyto!(background, measurement)
-        background = project_u!(background)
+        for _ in 1:constraint_iter
+            project_u!(background)
+            physical_projection!(background)
+        end
     end
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
@@ -60,13 +68,15 @@ end
 # y is second input dimension, either composition coordinates, or 2nd image dimension
 # l_y the lengthscale in this dimension
 function mcbl(A::AbstractMatrix, x::AbstractVector, l_x::Real,
-                                y::AbstractVecOrMat, l_y::Real;
-                                minres::Real = 1e-2, nsigma::Real = 2,
-                                maxiter::Int = 32, minnpeak::Int = 1)
+                y::AbstractVecOrMat, l_y::Real;
+                minres::Real = 1e-2, nsigma::Real = 2,
+                maxiter::Int = 32, minnpeak::Int = 1,
+                constraint_iter::Int = 1,
+                constraint_sigma::Union{Real, AbstractVector} = 0)
     measurement = copy(vec(A))
     background = similar(measurement)
     smooth_projection! = smooth_projection(x, l_x, y, l_y)
-    physical_projection! = physical_projection(minres, nsigma) # adding physical lower and upper bounds
+    physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
     projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
@@ -90,11 +100,12 @@ function mcbl(A::AbstractArray{<:Real, 3}, x::AbstractVecOrMat, l_x::Real,
                                 y::AbstractVecOrMat, l_y::Real,
                                 z::AbstractVecOrMat, l_z::Real;
                                 minres::Real = 1e-2, nsigma::Real = 2,
-                                maxiter::Int = 32, minnpeak::Int = 1)
+                                maxiter::Int = 32, minnpeak::Int = 1,
+                                constraint_sigma::Union{Real, AbstractArray} = 0)
     measurement = copy(vec(A))
     background = similar(measurement)
     smooth_projection! = smooth_projection(x, l_x, y, l_y, z, l_z)
-    physical_projection! = physical_projection(minres, nsigma) # adding physical lower and upper bounds
+    physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
     projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
@@ -172,19 +183,22 @@ end
 ############################ physical projection ###############################
 # projection to force background signal to be between zero and up to
 # the signal, including some
-function physical_projection(sigma::Real, nsigma::Int)
-    function project!(background, measurement)
-        upper_bound = @. measurement + sigma * nsigma
-        @. background = min(max(background, 0), upper_bound)
+# don't have to copy measurement because projection is not in place
+function physical_projection(measurement, sigma::Union{Real, AbstractArray})
+    function project!(background)
+        # measurement + sigma is upper bound for background
+        @. background = min(max(background, 0), measurement + sigma)
     end
+    project!(x, y) = project!(x)
     return project!
 end
 
-function combined_projection(P!, Q!)
-    function project!(Y, X)
-        P!(Y, X)
-        Q!(Y, X)
+function combined_projection(P!, Q!, iter::Int = 1)
+    function project!(background, measurement)
+        # IDEA: have iterations of constraint projections
+        P!(background, measurement)
+        Q!(background, measurement)
+        return background
     end
-    project!(X) = project!(X, X)
     return project!
 end
