@@ -4,7 +4,8 @@ function mcbl(A::AbstractVector, x::AbstractVector, l::Real;
                 minres::Real = 1e-2, nsigma::Real = 2,
                 maxiter::Int = 32, minnpeak::Int = 1,
                 constraint_iter::Int = 1,
-                constraint_sigma::Union{Real, AbstractArray} = 0)
+                constraint_sigma::Union{Real, AbstractArray} = 0,
+                forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     project_u! = smooth_projection(x, l)
     mcbl(A, project_u!, minres = minres, nsigma = nsigma,
                         maxiter = maxiter, minnpeak = minnpeak)
@@ -14,7 +15,8 @@ function mcbl(A::AbstractVector, project_u!;
                 minres::Real = 1e-2, nsigma::Real = 2,
                 maxiter::Int = 32, minnpeak::Int = 1.,
                 constraint_iter::Int = 1,
-                constraint_sigma::Union{Real, AbstractArray} = 0)
+                constraint_sigma::Union{Real, AbstractArray} = 0,
+                forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     measurement = copy(A)
     background = similar(A)
     physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
@@ -25,9 +27,9 @@ function mcbl(A::AbstractVector, project_u!;
             physical_projection!(background)
         end
     end
-    projected_background!(background, measurement, projection!,
-                                        minres = minres, nsigma = nsigma,
-                                        maxiter = maxiter, minnpeak = minnpeak)
+    projected_background!(background, measurement, projection!, minres = minres,
+        nsigma = nsigma, maxiter = maxiter, minnpeak = minnpeak,
+        forced_background = forced_background)
 end
 
 #################################### 2D ########################################
@@ -36,18 +38,18 @@ end
 # x are the index values for each spectrogram (i.e. column of A)
 # e.g.: if A[:, 1] is an XRD pattern, x should be the q-values associated with the pattern
 function mcbl(A::AbstractMatrix, k::Int, x::AbstractVector, l::Real;
-                                        minres::Real = 1e-2, nsigma::Real = 2,
-                                        maxiter::Int = 32, minnpeak::Int = 1)
+            minres::Real = 1e-2, nsigma::Real = 2, maxiter::Int = 32, minnpeak::Int = 1,
+            forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     project_u! = smooth_projection(x, l, k)
-    mcbl(A, k, project_u!, minres = minres, nsigma = nsigma,
-                        maxiter = maxiter, minnpeak = minnpeak)
+    mcbl(A, k, project_u!, minres = minres, nsigma = nsigma, maxiter = maxiter,
+        minnpeak = minnpeak, forced_background = forced_background)
 end
 
 # A, k same as above
 # project_u! is the projection of the background components into a RKHS
-function mcbl(A::AbstractMatrix, k::Int, project_u!;
-                                minres::Real, nsigma::Real,
-                                maxiter::Int, minnpeak::Int)
+function mcbl(A::AbstractMatrix, k::Int, project_u!; minres::Real, nsigma::Real,
+            maxiter::Int, minnpeak::Int,
+            forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     n, m = size(A)
     if k ≥ n || k ≥ m
         throw(DimensionMismatch("k = $k exceeds a matrix dimension: size(A) = ($n, $m)"))
@@ -60,56 +62,60 @@ function mcbl(A::AbstractMatrix, k::Int, project_u!;
         mul!(background, L.U, L.V)
     end
     projected_background!(background, measurement, projection!,
-                                        minres = minres, nsigma = nsigma,
-                                        maxiter = maxiter, minnpeak = minnpeak)
+                        minres = minres, nsigma = nsigma, maxiter = maxiter,
+                        minnpeak = minnpeak, forced_background = forced_background)
 end
 
 # for single image input
 # y is second input dimension, either composition coordinates, or 2nd image dimension
 # l_y the lengthscale in this dimension
 function mcbl(A::AbstractMatrix, x::AbstractVector, l_x::Real,
-                y::AbstractVecOrMat, l_y::Real;
-                minres::Real = 1e-2, nsigma::Real = 2,
-                maxiter::Int = 32, minnpeak::Int = 1,
-                constraint_iter::Int = 1,
-                constraint_sigma::Union{Real, AbstractVector} = 0)
+            y::AbstractVecOrMat, l_y::Real; minres::Real = 1e-2, nsigma::Real = 2,
+            maxiter::Int = 32, minnpeak::Int = 1,
+            constraint_sigma::Union{Real, AbstractVector} = 0,
+            forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     measurement = copy(vec(A))
     background = similar(measurement)
+    forced_background = vec(forced_background)
     smooth_projection! = smooth_projection(x, l_x, y, l_y)
     physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
     projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
-                                        maxiter = maxiter, minnpeak = minnpeak)
+                                        maxiter = maxiter, minnpeak = minnpeak,
+                                        forced_background = forced_background)
     return reshape(background, size(A))
 end
 ##################################### 3D #######################################
 # data tensor A consists of slices of smooth 2d images, i.e. A[:, :, 1] is a 2D image
 function mcbl(A::AbstractArray{<:Real, 3}, k::Int, x::AbstractVector, l_x::Real,
-                                                y::AbstractVector, l_y::Real;
-                                        minres::Real = 1e-2, nsigma::Real = 2,
-                                        maxiter::Int = 32, minnpeak::Int = 1)
+            y::AbstractVector, l_y::Real; minres::Real = 1e-2, nsigma::Real = 2,
+            maxiter::Int = 32, minnpeak::Int = 1,
+            forced_background::AbstractArray{Bool} = zeros(Bool, size(A)))
     project_u! = smooth_projection(x, l_x, y, l_y)
     A2D = reshape(A, :, size(A, 3)) # convert to matrix where each column is an image
+    forced_background = reshape(forced_background, :, size(A, 3)) # convert to matrix where each column is an image
     background = mcbl(A2D, k, project_u!, minres = minres, nsigma = nsigma,
-                        maxiter = maxiter, minnpeak = minnpeak)
+                        maxiter = maxiter, minnpeak = minnpeak,
+                        forced_background = forced_background)
    return reshape(background, size(A))
 end
 
 function mcbl(A::AbstractArray{<:Real, 3}, x::AbstractVecOrMat, l_x::Real,
-                                y::AbstractVecOrMat, l_y::Real,
-                                z::AbstractVecOrMat, l_z::Real;
-                                minres::Real = 1e-2, nsigma::Real = 2,
-                                maxiter::Int = 32, minnpeak::Int = 1,
-                                constraint_sigma::Union{Real, AbstractArray} = 0)
+            y::AbstractVecOrMat, l_y::Real, z::AbstractVecOrMat, l_z::Real;
+            minres::Real = 1e-2, nsigma::Real = 2, maxiter::Int = 32, minnpeak::Int = 1,
+            constraint_sigma::Union{Real, AbstractArray} = 0,
+            forced_background = zeros(Bool, size(A)))
     measurement = copy(vec(A))
+    forced_background = vec(forced_background)
     background = similar(measurement)
     smooth_projection! = smooth_projection(x, l_x, y, l_y, z, l_z)
     physical_projection! = physical_projection(measurement, constraint_sigma) # adding physical lower and upper bounds
     projection! = combined_projection(smooth_projection!, physical_projection!)
     projected_background!(background, measurement, projection!,
                                         minres = minres, nsigma = nsigma,
-                                        maxiter = maxiter, minnpeak = minnpeak)
+                                        maxiter = maxiter, minnpeak = minnpeak,
+                                        forced_background = forced_background)
     return reshape(background, size(A))
 end
 
@@ -118,20 +124,21 @@ end
 # WARNING: overwrites measurement with background estimate
 # minnpeak is the minimum number of positive outliers below which the algorithm terminates
 function projected_background!(background::AbstractArray, measurement::AbstractArray,
-                                projection!; minres::Real = 1e-2, nsigma::Real = 2,
-                                            maxiter::Int = 32, minnpeak::Int = 1)
+                    projection!; minres::Real = 1e-2, nsigma::Real = 2,
+                    maxiter::Int = 32, minnpeak::Int = 1,
+                    forced_background::AbstractArray = zeros(Bool, size(background)))
     ispeak = BitArray(undef, size(background))
     δ = similar(background)
     for i in 1:maxiter
         projection!(background, measurement) # the projected measurement is an approximation to the background
         @. δ = measurement - background
-        σ = std(δ)
+        σ = std(δ)  # empirical standard deviation of error with current model
         σ > minres || break
-        @. ispeak = δ > nsigma * σ # TODO: local smoothing
+        @. ispeak = @. (δ > nsigma * σ) & ~forced_background # IDEA: local smoothing
         sum(ispeak) > minnpeak || break
         @. measurement[ispeak] = background[ispeak] # overwrite large positive outliers with background model
     end
-    background
+    return background
 end
 
 ############################### smooth projection ##############################
@@ -169,6 +176,7 @@ function smooth_projection(x::AbstractVecOrMat, l_x::Real,
     kxyz = Kernel.Lengthscale.((k_x, k_y, k_z), (l_x, l_y, l_z))
     smooth_projection(kxyz, (x, y, z), tol = tol)
 end
+
 function smooth_projection(k::Tuple, x::Tuple; tol::Real = 1e-6)
     k = Kernel.separable(*, k...)
     K = Kernel.gramian(k, grid(x...))
@@ -178,7 +186,6 @@ function smooth_projection(k::Tuple, x::Tuple; tol::Real = 1e-6)
     projection!(X) = (X .= P*X)
     return projection!
 end
-
 
 ############################ physical projection ###############################
 # projection to force background signal to be between zero and up to
