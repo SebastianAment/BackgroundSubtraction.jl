@@ -171,7 +171,7 @@ function smooth_projection(x::AbstractVecOrMat, l_x::Real,
 end
 function smooth_projection(k::Tuple, x::Tuple; tol::Real = 1e-6)
     k = Kernel.separable(*, k...)
-    K = Kernel.gramian(k, grid(x...))
+    K = Kernel.gramian(k, LazyGrid(x))
     K = kronecker(reverse(K.factors)) # why reverse? because definition of Kronecker product is "row-major"
     P = kronecker(A -> projection(A, tol = tol), K)
     projection!(Y, X) = (Y .= P*X) # mul!(background, P, measurement)

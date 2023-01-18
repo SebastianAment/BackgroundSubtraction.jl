@@ -6,7 +6,7 @@ using LazyInverses
 using Statistics
 using KroneckerProducts: kronecker
 using CovarianceFunctions
-using CovarianceFunctions: grid
+using CovarianceFunctions: LazyGrid
 
 export mcbl
 export kronecker_mcbl
